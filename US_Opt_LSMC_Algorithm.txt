@@ -1,0 +1,111 @@
+class American_Options_LSMC():
+  
+
+    def __init__(self, CallPut, S0, strike, T, M, r, sigma, simulations):
+        self.S0 = float(S0)
+        self.strike = float(strike)
+        self.T = float(T)
+        self.r = float(r)
+        self.sigma = float(sigma)
+        self.CallPut = int(CallPut)
+        self.simulations = int(simulations)
+        self.M = int(M)
+        self.dt = self.T /self. M
+        self.df = math.exp(-self.r * self.dt)
+
+    @property
+    def value(self):
+        S = self.S0 * np.exp(np.cumsum((self.r - 0.5 * self.sigma ** 2) * self.dt + self.sigma * math.sqrt(self.dt) * np.random.standard_normal((self.M + 1,self.simulations)), axis=0))
+        
+        
+        S[0] = self.S0
+        
+        if self.CallPut == 0:
+            
+            h = np.maximum(self.strike - S, 0)
+        else:
+            h = np.maximum(S - self.strike, 0)
+            
+        V = h[-1]
+              
+        for t in range(self.M - 1, 0, -1):
+            rg = np.polyfit(S[t], V * self.df, 5)
+            C = np.polyval(rg, S[t])
+            V = np.where(h[t] > C, h[t], V * self.df)
+        
+        value = self.df * np.sum (V) / self.simulations
+ 
+        return value
+    
+    
+    @property
+    def delta(self):
+        diff = self.S0 * 0.01
+        myCall_1 = American_Options_LSMC(self.CallPut, self.S0 + diff, 
+                                       self.strike, self.T, self.M, 
+                                       self.r, self.sigma, self.simulations)
+        myCall_2 = American_Options_LSMC(self.CallPut, self.S0 - diff, 
+                                       self.strike, self.T, self.M, 
+                                       self.r, self.sigma, self.simulations)
+        return (myCall_1.value - myCall_2.value) / float(2. * diff)
+    
+    @property
+    def gamma(self):
+        diff = self.S0 * 0.01
+        myCall_1 = American_Options_LSMC(self.CallPut, self.S0 + diff, 
+                                       self.strike, self.T, self.M, 
+                                       self.r, self.sigma, self.simulations)
+        myCall_2 = American_Options_LSMC(self.CallPut, self.S0 - diff, 
+                                       self.strike, self.T, self.M, 
+                                       self.r, self.sigma, self.simulations)
+        return (myCall_1.delta - myCall_2.delta) / float(2. * diff)
+       
+    @property
+    def vega(self):
+        diff = self.sigma * 0.01
+        myCall_1 = American_Options_LSMC(self.CallPut, self.S0, 
+                                       self.strike, self.T, self.M, 
+                                       self.r, self.sigma + diff, 
+                                       self.simulations)
+        myCall_2 = American_Options_LSMC(self.CallPut, self.S0,
+                                       self.strike, self.T, self.M, 
+                                       self.r, self.sigma - diff, 
+                                       self.simulations)
+        return (myCall_1.value - myCall_2.value) / float(2. * diff) 
+    
+    @property
+    def rho(self):        
+        diff = 0.01 #self.r *
+        #if (self.r - diff) < 0:        
+        #   myCall_1 = American_Options_LSMC(self.CallPut, self.S0, 
+        #                               self.strike, self.T, self.M, 
+        #                               self.r + diff, self.sigma, 
+        #                               self.simulations)
+        #    myCall_2 = American_Options_LSMC(self.CallPut, self.S0, 
+        #                               self.strike, self.T, self.M, 
+        #                               self.r, self.sigma, 
+        #                               self.simulations)
+        #    return (myCall_1.value - myCall_2.value) / float(diff)
+        #else:
+        myCall_1 = American_Options_LSMC(self.CallPut, self.S0, 
+                                   self.strike, self.T, self.M, 
+                                   self.r + diff, self.sigma, 
+                                   self.simulations)
+        myCall_2 = American_Options_LSMC(self.CallPut, self.S0, 
+                                   self.strike, self.T, self.M, 
+                                   self.r - diff, self.sigma, 
+                                   self.simulations)
+        return (myCall_1.value - myCall_2.value) / float(2. * diff)
+        
+    @property
+    def theta(self): 
+        diff = 1 / 252.
+        myCall_1 = American_Options_LSMC(self.CallPut, self.S0, 
+                                       self.strike, self.T + diff, self.M, 
+                                       self.r, self.sigma, 
+                                       self.simulations)
+        myCall_2 = American_Options_LSMC(self.CallPut, self.S0, 
+                                       self.strike, self.T - diff, self.M, 
+                                       self.r, self.sigma, 
+                                       self.simulations)
+        return (myCall_2.value - myCall_1.value) / float(2. * diff)
